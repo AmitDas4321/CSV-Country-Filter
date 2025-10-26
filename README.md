@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screenshots/TextSnap Contacts Extractor Banner.png" alt="TextSnap Contacts Extractor Banner" width="800">
+  <img src="screenshots/TextSnap Contacts Extractor Banner.png" alt="CSV Country Filter Banner" width="800">
 </p>
 
 <p align="center">
