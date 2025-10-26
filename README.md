@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/screenshots/CSV Country Filter Banner.png" alt="CSV Country Filter Banner" width="800">
+  <img src="img/CSV Country Filter Banner.png" alt="CSV Country Filter Banner" width="800">
 </p>
 
 <p align="center">
