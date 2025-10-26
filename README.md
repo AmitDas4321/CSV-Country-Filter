@@ -9,8 +9,8 @@
 <h1 align="center">CSV Country Filter</h1>
 
 <p align="center">
-  <b>Extract WhatsApp Contacts Instantly — From Chats, Groups, and Labels!</b><br>
-  Version 1.0.1 • Developed by <a href="https://textsnap.in">TextSnap</a>
+  <b>Filter Phone Numbers by Country Instantly — Smart, Fast, and Secure!
+Version 1.0.0 • Developed by Amit Das</a>
 </p>
 
 ---
