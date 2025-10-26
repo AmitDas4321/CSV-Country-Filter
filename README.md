@@ -1,5 +1,17 @@
-# CSV Country Filter  
-> A lightweight browser-based tool that lets you upload a CSV, detect phone number country codes, and download a filtered file — fast, secure, and fully client-side.
+<p align="center">
+  <img src="screenshots/TextSnap Contacts Extractor Banner.png" alt="TextSnap Contacts Extractor Banner" width="800">
+</p>
+
+<p align="center">
+  <b>A lightweight browser-based tool that lets you upload a CSV, detect phone number country codes, and download a filtered file — fast, secure, and fully client-side.</b>
+</p>
+
+<h1 align="center">CSV Country Filter</h1>
+
+<p align="center">
+  <b>Extract WhatsApp Contacts Instantly — From Chats, Groups, and Labels!</b><br>
+  Version 1.0.1 • Developed by <a href="https://textsnap.in">TextSnap</a>
+</p>
 
 ---
 
