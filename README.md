@@ -9,8 +9,8 @@
 <h1 align="center">CSV Country Filter</h1>
 
 <p align="center">
-  <b>Filter Phone Numbers by Country Instantly — Smart, Fast, and Secure!
-Version 1.0.0 • Developed by Amit Das</a>
+  <b>Filter Phone Numbers by Country Instantly — Smart, Fast, and Secure!</b><br>
+ Version 1.0.0 • Developed by <a herf="https://amitdas.site">Amit Das</a>
 </p>
 
 ---
