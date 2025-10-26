@@ -1,5 +1,14 @@
 # CSV Country Filter  
-> A simple browser-based tool to filter CSV files by country calling code.
+> A lightweight browser-based tool that lets you upload a CSV, detect phone number country codes, and download a filtered file — fast, secure, and fully client-side.
+
+---
+
+## 🎬 Demo
+<p align="center">
+  <img src="img/screenshots/CSV-Country-Filter.gif" alt="CSV Country Filter Demo" width="800"/>
+</p>
+
+---
 
 ## 🚀 Overview  
 CSV Country Filter lets you upload a CSV file, select the column containing phone numbers, automatically detect country calling codes, and export only the rows that match your selected country.  
@@ -14,25 +23,6 @@ Everything runs in your browser — no backend, no uploads, no data sharing.
 ✅ Download the filtered CSV instantly  
 ✅ 100% client-side — private and secure  
 ✅ Works offline after first load (if cached)
-
----
-
-## 📸 Screenshots  
-
-### 1️⃣ Upload CSV File  
-<p align="center">
-  <img src="https://github.com/AmitDas4321/CSV-Country-Filter/blob/main/screenshot1.png" alt="Upload CSV File Screenshot" width="800"/>
-</p>
-
-### 2️⃣ Detect Country Codes  
-<p align="center">
-  <img src="https://github.com/AmitDas4321/CSV-Country-Filter/blob/main/screenshot2.png" alt="Detect Country Codes Screenshot" width="800"/>
-</p>
-
-### 3️⃣ Download Filtered File  
-<p align="center">
-  <img src="https://github.com/AmitDas4321/CSV-Country-Filter/blob/main/screenshot3.png" alt="Download Filtered CSV Screenshot" width="800"/>
-</p>
 
 ---
 
