@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CSV Country Filter (Phone Column)</title>
+<!-- PapaParse for robust CSV parsing/unparsing -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  :root { --bg:#f7f7fb; --card:#fff; --text:#222; --muted:#666; --accent:#1f6feb; --border:#e9e9ef; }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;margin:0;background:var(--bg);color:var(--text)}
+  .wrap{max-width:980px;margin:0 auto;padding:24px}
+  header{margin:8px 0 16px}
+  h1{font-size:22px;margin:0 0 4px}
+  p.lead{color:var(--muted);margin:0 0 16px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.04);padding:18px;margin:14px 0}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .col{flex:1 1 260px;min-width:260px}
+  label{display:block;font-size:13px;margin:0 0 6px;color:#333}
+  input[type="file"],select,button{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:#fff}
+  select{cursor:pointer}
+  button{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+  button[disabled]{opacity:.6;cursor:not-allowed}
+  .muted{color:var(--muted);font-size:13px}
+  .pill{display:inline-block;padding:4px 10px;border:1px solid var(--border);border-radius:999px;margin:4px 6px 0 0;background:#fff;font-size:12px}
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace}
+  .hr{height:1px;background:var(--border);margin:14px 0}
+  .right{display:flex;gap:8px;justify-content:flex-end}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Filter CSV by Country (Phone Numbers)</h1>
+      <p class="lead">Upload your CSV, pick the phone column, choose a country code to keep, then download the filtered CSV.</p>
+    </header>
+
+    <div class="card">
+      <div class="row">
+        <div class="col">
+          <label for="csvFile">1) Select CSV file</label>
+          <input id="csvFile" type="file" accept=".csv,text/csv" />
+          <div class="muted" id="fileInfo"></div>
+        </div>
+        <div class="col">
+          <label for="phoneColumn">2) Choose phone column</label>
+          <select id="phoneColumn" disabled></select>
+          <div class="muted">We’ll scan this column to detect country codes.</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div class="col">
+          <label for="countryPicker">3) Country to keep</label>
+          <select id="countryPicker" disabled></select>
+          <div class="muted" id="detectedStats">Detected country codes will appear here.</div>
+        </div>
+        <div class="col right">
+          <button id="scanBtn" disabled>Scan Country Codes</button>
+          <button id="downloadBtn" disabled>Download Filtered CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Tips</strong>
+      <div class="stats">
+        <span class="pill">Accepts large CSVs</span>
+        <span class="pill">Preserves all columns</span>
+        <span class="pill">Only rows with selected country kept</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+/** Lightweight country code map (common E.164 calling codes) */
+const CODE_TO_COUNTRY = {
+  // Americas
+  "1":"USA/Canada","52":"Mexico","53":"Cuba","54":"Argentina","55":"Brazil","56":"Chile","57":"Colombia","58":"Venezuela",
+  // Europe
+  "30":"Greece","31":"Netherlands","32":"Belgium","33":"France","34":"Spain","36":"Hungary","39":"Italy",
+  "40":"Romania","41":"Switzerland","43":"Austria","44":"United Kingdom","45":"Denmark","46":"Sweden","47":"Norway",
+  "48":"Poland","49":"Germany","351":"Portugal","352":"Luxembourg","353":"Ireland","354":"Iceland","355":"Albania",
+  "356":"Malta","357":"Cyprus","358":"Finland","359":"Bulgaria","380":"Ukraine","385":"Croatia","386":"Slovenia",
+  "387":"Bosnia & Herz.","389":"North Macedonia","420":"Czechia","421":"Slovakia","423":"Liechtenstein",
+  // Africa
+  "20":"Egypt","211":"South Sudan","212":"Morocco","213":"Algeria","216":"Tunisia","218":"Libya",
+  "220":"Gambia","221":"Senegal","222":"Mauritania","223":"Mali","224":"Guinea","225":"Côte d’Ivoire",
+  "226":"Burkina Faso","227":"Niger","228":"Togo","229":"Benin","230":"Mauritius","231":"Liberia","232":"Sierra Leone",
+  "233":"Ghana","234":"Nigeria","235":"Chad","236":"Central African Rep.","237":"Cameroon","238":"Cape Verde",
+  "239":"São Tomé & Príncipe","240":"Equatorial Guinea","241":"Gabon","242":"Congo","243":"DR Congo","244":"Angola",
+  "245":"Guinea-Bissau","246":"Diego Garcia","247":"Ascension","248":"Seychelles","249":"Sudan","250":"Rwanda",
+  "251":"Ethiopia","252":"Somalia","253":"Djibouti","254":"Kenya","255":"Tanzania","256":"Uganda","257":"Burundi",
+  "258":"Mozambique","260":"Zambia","261":"Madagascar","262":"Réunion/Mayotte","263":"Zimbabwe","264":"Namibia",
+  "265":"Malawi","266":"Lesotho","267":"Botswana","268":"Eswatini","269":"Comoros","27":"South Africa",
+  // Middle East & Asia
+  "90":"Türkiye","92":"Pakistan","93":"Afghanistan","94":"Sri Lanka","95":"Myanmar","98":"Iran",
+  "970":"Palestine","971":"United Arab Emirates","972":"Israel","973":"Bahrain","974":"Qatar","975":"Bhutan",
+  "976":"Mongolia","977":"Nepal","964":"Iraq","961":"Lebanon","962":"Jordan","963":"Syria","966":"Saudi Arabia",
+  "968":"Oman","969":"Yemen", // (legacy ranges; Yemen commonly 967)
+  "967":"Yemen",
+  // South & East Asia
+  "60":"Malaysia","61":"Australia","62":"Indonesia","63":"Philippines","64":"New Zealand","65":"Singapore",
+  "66":"Thailand","81":"Japan","82":"South Korea","84":"Vietnam","86":"China","880":"Bangladesh",
+  "886":"Taiwan","852":"Hong Kong","853":"Macau","91":"India"
+};
+
+// Utility: best-effort phone normalization -> digits only, strip leading 00 / +
+function normalizeDigits(phone) {
+  if (!phone) return "";
+  let d = String(phone).replace(/[^\d+]/g, "");
+  d = d.replace(/^00/, ""); // 00XXXXXXXX -> international
+  d = d.replace(/^\+/, ""); // +XXXXXXXX
+  return d.replace(/\D/g, ""); // just digits
+}
+
+// Try to detect a calling code by longest prefix match (1..3 digits typical; some 2/3/4 appear in extended ranges)
+function detectCallingCode(digits) {
+  if (!digits) return null;
+
+  // if local-ish (<=10 digits), no country code
+  if (digits.length <= 10) return null;
+
+  // Try longest-first 3, then 2, then 1
+  for (let len = 3; len >= 1; len--) {
+    const pref = digits.slice(0, len);
+    if (CODE_TO_COUNTRY[pref]) return pref;
+  }
+
+  // Fallback heuristic: (length - 10) leading as CC if it exists
+  const leadLen = digits.length - 10;
+  if (leadLen >= 1 && leadLen <= 3) {
+    const pref = digits.slice(0, leadLen);
+    if (CODE_TO_COUNTRY[pref]) return pref;
+  }
+
+  return null;
+}
+
+function countryLabel(cc) {
+  if (!cc) return "No country code (local)";
+  const name = CODE_TO_COUNTRY[cc] || `Unknown (${cc})`;
+  return `${name}  (+${cc})`;
+}
+
+const el = {
+  file: document.getElementById('csvFile'),
+  fileInfo: document.getElementById('fileInfo'),
+  phoneCol: document.getElementById('phoneColumn'),
+  countryPicker: document.getElementById('countryPicker'),
+  scanBtn: document.getElementById('scanBtn'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  detectedStats: document.getElementById('detectedStats')
+};
+
+let parsed = null;      // Papa parsed object { data, meta, errors }
+let headers = [];       // header row
+let phoneColIndex = -1; // index of the phone column
+let codeCounts = {};    // detected code -> count
+
+el.file.addEventListener('change', handleFile);
+el.phoneCol.addEventListener('change', () => {
+  phoneColIndex = Number(el.phoneCol.value);
+  if (!Number.isInteger(phoneColIndex) || phoneColIndex < 0) {
+    el.scanBtn.disabled = true;
+  } else {
+    el.scanBtn.disabled = !parsed;
+  }
+});
+el.scanBtn.addEventListener('click', scanCodes);
+el.countryPicker.addEventListener('change', () => {
+  const ok = el.countryPicker.value !== '';
+  el.downloadBtn.disabled = !ok;
+});
+el.downloadBtn.addEventListener('click', downloadFiltered);
+
+function handleFile() {
+  resetState(true);
+  const file = el.file.files?.[0];
+  if (!file) return;
+
+  el.fileInfo.textContent = `Selected: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: 'greedy',
+    transformHeader: h => h?.trim?.() ?? h,
+    complete: (res) => {
+      parsed = res;
+      if (res.errors?.length) {
+        console.warn('CSV parse warnings:', res.errors.slice(0,3));
+      }
+      headers = res.meta?.fields || Object.keys(res.data[0] || {});
+      populatePhoneColumn(headers);
+    },
+    error: (err) => {
+      alert('Failed to parse CSV: ' + (err?.message || err));
+    }
+  });
+}
+
+function populatePhoneColumn(fields) {
+  el.phoneCol.innerHTML = '';
+  if (!fields.length) {
+    el.phoneCol.disabled = true;
+    el.scanBtn.disabled = true;
+    alert('CSV has no headers/columns detected.');
+    return;
+  }
+  // Build options
+  fields.forEach((h, idx) => {
+    const opt = document.createElement('option');
+    opt.value = String(idx);
+    opt.textContent = h || `(Column ${idx+1})`;
+    el.phoneCol.appendChild(opt);
+  });
+
+  // Best-guess select: prefer columns named like "phone", "mobile", "number", "contact"
+  const guessNames = ['phone','mobile','number','contact','whatsapp','ph','msisdn','tel'];
+  let guessIdx = 0;
+  const lowerFields = fields.map(h => (h||'').toString().toLowerCase());
+  for (let i=0;i<lowerFields.length;i++){
+    if (guessNames.some(n => lowerFields[i].includes(n))) { guessIdx = i; break; }
+  }
+  el.phoneCol.value = String(guessIdx);
+  phoneColIndex = guessIdx;
+
+  el.phoneCol.disabled = false;
+  el.scanBtn.disabled = !parsed;
+}
+
+function scanCodes() {
+  if (!parsed || phoneColIndex < 0) return;
+
+  const rows = parsed.data || [];
+  codeCounts = {};
+  let totalPhones = 0;
+
+  for (const row of rows) {
+    // Skip empty rows that Papa may keep
+    if (!row || typeof row !== 'object') continue;
+
+    const phone = row[headers[phoneColIndex]];
+    if (phone == null || phone === '') continue;
+
+    totalPhones++;
+    const digits = normalizeDigits(phone);
+    const cc = detectCallingCode(digits); // null for local / unknown
+
+    const key = cc || 'LOCAL';
+    codeCounts[key] = (codeCounts[key] || 0) + 1;
+  }
+
+  // Populate country picker
+  el.countryPicker.innerHTML = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Select a country to keep…';
+  el.countryPicker.appendChild(placeholder);
+
+  // Sort by count desc
+  const entries = Object.entries(codeCounts).sort((a,b) => b[1]-a[1]);
+  for (const [key,count] of entries) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = key === 'LOCAL' ? `No country code (local) — ${count} rows` : `${countryLabel(key)} — ${count} rows`;
+    el.countryPicker.appendChild(opt);
+  }
+
+  el.countryPicker.disabled = entries.length === 0;
+  el.downloadBtn.disabled = true;
+
+  // Stats text
+  if (!entries.length) {
+    el.detectedStats.textContent = 'No phone values found in the selected column.';
+  } else {
+    const pills = entries.map(([k,c]) => {
+      const label = k === 'LOCAL' ? 'LOCAL' : `+${k}`;
+      return `<span class="pill mono">${label}: ${c}</span>`;
+    }).join(' ');
+    el.detectedStats.innerHTML = `Detected in ${totalPhones} phone cells: ${pills}`;
+  }
+}
+
+function downloadFiltered() {
+  const keepKey = el.countryPicker.value;
+  if (!keepKey) return;
+
+  const rows = parsed.data || [];
+  const out = [];
+
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const phone = row[headers[phoneColIndex]];
+    const digits = normalizeDigits(phone);
+    const cc = detectCallingCode(digits);
+    const key = cc || 'LOCAL';
+    if (key === keepKey) out.push(row);
+  }
+
+  const csv = Papa.unparse(out, { columns: headers });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  const file = (document.getElementById('csvFile').files?.[0]?.name || 'filtered.csv').replace(/\.csv$/i,'');
+  const label = keepKey === 'LOCAL' ? 'LOCAL' : `+${keepKey}`;
+  a.download = `${file}__only-${label}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function resetState(clearFile=false) {
+  if (clearFile) {
+    parsed = null; headers = []; phoneColIndex = -1; codeCounts = {};
+    el.fileInfo.textContent = '';
+  }
+  el.phoneCol.innerHTML = '';
+  el.phoneCol.disabled = true;
+  el.countryPicker.innerHTML = '';
+  el.countryPicker.disabled = true;
+  el.scanBtn.disabled = true;
+  el.downloadBtn.disabled = true;
+  el.detectedStats.textContent = 'Detected country codes will appear here.';
+}
+</script>
+</body>
+</html>
