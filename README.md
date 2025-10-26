@@ -10,7 +10,7 @@
 
 <p align="center">
   <b>Filter Phone Numbers by Country Instantly — Smart, Fast, and Secure!</b><br>
- Version 1.0.0 • Developed by <a herf="https://amitdas.site">Amit Das</a>
+ Version 1.0.0 • Developed by <a href="https://amitdas.site">AmitDas</a>
 </p>
 
 ---
